@@ -1,0 +1,33 @@
+# --- 机密：任何 .env 都不许进版本库，只有 .env.example 可以 ---
+.env
+.env.*
+!.env.example
+
+# --- Node ---
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# --- 编辑器 / 系统 ---
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# --- 日志 ---
+*.log
+npm-debug.log*
+
+# --- Claude Code 本机配置 ---
+.claude/settings.local.json

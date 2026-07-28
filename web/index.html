@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- viewport-fit=cover 让页面延伸到 iPhone 刘海 / home indicator 区域，
+         配合 CSS 里的 env(safe-area-inset-*) 使用 -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1"
+    />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f2f7" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Expenses</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
