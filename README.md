@@ -1,138 +1,158 @@
 # Asian-Party
 
-这个仓库有两样东西：
+This repository holds two things:
 
-- **小票图片数据集** —— `receipt-image-dataset-1` ~ `-4`，188 张真实小票照片
-- **记账 App** —— `web/` + `api/` + `supabase/`，拍小票 → GPT-4o 识别 → 确认后入账
+- **A receipt image dataset** — `receipt-image-dataset-1` to `-4`, 188 photos of real receipts
+- **An expense tracker app** — `web/` + `api/` + `supabase/`. Photograph a receipt,
+  GPT-4o reads it, you confirm, it's saved.
 
-数据集是仓库原本的内容，App 是后来加的。App 的识别准确率就是拿这个数据集验的。
+The dataset came first; the app was added later. The app's extraction accuracy was
+validated against this dataset.
 
 ---
 
-# 一、小票数据集
+# 1. The receipt dataset
 
-188 张 JPEG，分在四个目录里，按 `<编号>-receipt.jpg` 命名：
+188 JPEGs across four directories, named `<number>-receipt.jpg`:
 
-| 目录 | 张数 | 编号区间 |
+| Directory | Images | Number range |
 | --- | --- | --- |
 | `receipt-image-dataset-1` | 34 | 1000–1032 |
 | `receipt-image-dataset-2` | 51 | 1033–1093 |
 | `receipt-image-dataset-3` | 53 | 1094–1145 |
 | `receipt-image-dataset-4` | 54 | 1146–1199 |
 
-编号跨目录连续，全局 1000–1199，其中 12 个号被删掉了（见 git 历史里那批 `Delete
-xxxx-receipt.jpg` 提交），所以是 188 张而不是 200 张。没有重号。
+Numbering runs continuously across the directories, 1000–1199. Twelve numbers were
+deleted along the way (see the run of `Delete xxxx-receipt.jpg` commits in the history),
+which is why there are 188 images rather than 200. No number appears twice.
 
-每个目录下还有一个 1 字节的 `temp` 占位文件 —— 空目录进不了 git，删掉图片后靠它撑住目录。
+Each directory also holds a 1-byte `temp` file. Git won't track an empty directory, so
+these keep the directories alive as images get removed.
 
-图片是真实世界的小票照片和扫描件，尺寸和方向都不统一（抽样见到 338×450 到 1000×903
-不等），有拍歪的、有反光的、有折痕的。这正是拿它测识别的价值所在。
+The images are real-world receipt photos and scans. Sizes and orientations vary — a
+sample ranged from 338×450 to 1000×903 — and plenty are shot at an angle, glare across
+the paper, or creased. That is exactly what makes them useful for testing extraction.
 
-> 数据来源和授权条款仓库里没有记录。要商用或再分发的话，先跟仓库所有者确认。
+> The repository does not record where these images came from or under what licence.
+> Check with the repository owner before using them commercially or redistributing them.
 
-## 拿它测识别
+## Testing extraction against it
 
-后端起好之后，直接把图片打给识别接口：
+With the backend running, point the recognition endpoint at any image:
 
 ```bash
 curl -s -X POST http://localhost:8000/api/recognize \
   -F "file=@receipt-image-dataset-1/1012-receipt.jpg" | python3 -m json.tool
 ```
 
-目前的 prompt 是拿其中 5 张（1012 / 1040 / 1093 / 1112 / 1178）调出来的，核心字段
-（日期、总额、币种、分类、支付方式、明细条数）对人工核对的答案全中。**只有 5 张，且
-恰好都是美国餐饮小票**（USD + food），英国超市、加油站、外币这些场景没被真正考验过 ——
-想扩样本，剩下 183 张都在这儿。
+The current prompt was tuned against five of these (1012 / 1040 / 1093 / 1112 / 1178).
+On those five, every core field — date, total, currency, category, payment method and
+line-item count — matched a hand-checked answer key.
+
+That is **five images, and all five happen to be US restaurant receipts** (USD, food).
+UK supermarkets, petrol stations and foreign currencies have never actually been put to
+the test. The other 183 images are right here if you want to widen the sample.
 
 ---
 
-# 二、记账 App
+# 2. The expense tracker
 
-拍小票 → GPT-4o 识别 → 确认后入账。也支持手动记一笔。
+Photograph a receipt, GPT-4o reads it, you confirm, it's saved. Manual entry works too.
 
-- `web/` — Vite + React + TypeScript + Tailwind，前端直连 Supabase 做 CRUD
-- `api/` — FastAPI，只负责调 OpenAI 识别小票
-- `supabase/` — 数据库 schema
+- `web/` — Vite + React + TypeScript + Tailwind. Talks to Supabase directly for CRUD.
+- `api/` — FastAPI. Its only job is running receipt images through OpenAI.
+- `supabase/` — database schema
 
-## 首次配置
+## First-time setup
 
-### 1. 数据库
+### 1. Database
 
-在 Supabase 控制台 → SQL Editor 粘贴 `supabase/schema.sql` 全文并 Run。
-这个文件是幂等的，改了之后重跑一次就行。
+Paste the whole of `supabase/schema.sql` into the Supabase dashboard → SQL Editor and
+run it. The file is idempotent, so just re-run it after any change.
 
-### 2. 前端环境变量
+### 2. Frontend environment
 
 ```bash
 cp web/.env.example web/.env.local
 ```
 
-填入 Supabase 控制台 → Project Settings → API 里的 Project URL 和 anon public key。
+Fill in the Project URL and anon public key from the Supabase dashboard →
+Project Settings → API.
 
-### 3. 后端环境变量
+### 3. Backend environment
 
 ```bash
 cp api/.env.example api/.env
 ```
 
-填入 [OpenAI](https://platform.openai.com/api-keys) 的 API key。识别要读图，
-模型必须支持视觉输入 —— 默认 `gpt-4o`。
-不填也能跑，只是 `/scan` 会返回 503 —— 手动记账不受影响。
+Fill in an [OpenAI](https://platform.openai.com/api-keys) API key. Extraction reads
+images, so the model has to support vision input — the default is `gpt-4o`.
 
-> `.env` / `.env.local` 都在 `.gitignore` 里。anon key 可以进前端（RLS 是真正的防线），
-> 但 `OPENAI_API_KEY` 和 `service_role` key 只能待在 `api/.env`。
+You can run without a key; `/scan` will just return 503. Manual entry is unaffected.
 
-## 启动
+> Both `.env` and `.env.local` are gitignored. The anon key is fine in the frontend
+> bundle — RLS is the real boundary — but `OPENAI_API_KEY` and the `service_role` key
+> must never leave `api/.env`.
 
-两个终端：
+## Running
+
+Two terminals:
 
 ```bash
-# 后端 → http://localhost:8000
+# backend → http://localhost:8000
 cd api && .venv/bin/uvicorn app.main:app --reload --port 8000
 
-# 前端 → http://localhost:5173
+# frontend → http://localhost:5173
 cd web && npm run dev
 ```
 
-首页顶部的「连接状态」两个点全绿就说明配好了。
+Both dots green in the "Connection" panel on the home screen means you're set up.
 
-首次 clone 后需要先装依赖：
+After a fresh clone, install dependencies first:
 
 ```bash
 cd web && npm install
 cd ../api && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
-## 手机真机调试
+## Testing on a real phone
 
-前端已配 `host: true`，`npm run dev` 会打印 Network 地址（形如 `http://192.168.x.x:5173`）。
-手机连同一 WiFi 打开该地址即可。还需要两处改动：
+The frontend already sets `host: true`, so `npm run dev` prints a Network address like
+`http://192.168.x.x:5173`. Open that on a phone on the same WiFi. Two more changes are
+needed:
 
-1. `api/.env` 的 `CORS_ORIGINS` 追加 `http://192.168.x.x:5173`
-2. `web/.env.local` 的 `VITE_API_BASE_URL` 改成 `http://192.168.x.x:8000`
+1. Append `http://192.168.x.x:5173` to `CORS_ORIGINS` in `api/.env`
+2. Point `VITE_API_BASE_URL` in `web/.env.local` at `http://192.168.x.x:8000`
 
-后端也要用 `--host 0.0.0.0` 启动才能被手机访问。
+The backend also has to be started with `--host 0.0.0.0` to be reachable from the phone.
 
-## 设计约定
+## Design decisions
 
-**分类以 slug 入库**（`food` / `transport` / ...），显示名、图标、颜色只存在于
-`web/src/constants/categories.ts`。UI 从中文改成英文时，历史数据一行没动 —— 这条约定
-就是为这种情况准备的。
+**Categories are stored as slugs** (`food`, `transport`, …). Labels, icons and colours
+live only in `web/src/constants/categories.ts`. The UI was switched from Chinese to
+English without touching a single stored row — precisely the case this split was meant
+to absorb.
 
-**`image_path` 存的是 Storage 对象路径，不是 URL。** bucket 是私有的，签名 URL 会过期，
-所以展示时才用 `createSignedUrl()` 现算。
+**`image_path` stores a Storage object path, not a URL.** The bucket is private and
+signed URLs expire, so `createSignedUrl()` mints one at display time instead.
 
-**识别结果一律要人过目才写库。** 模型认错金额的代价是账本变脏，多看一眼几乎没成本。
-`/scan` 的流程是：浏览器压图 → `POST /api/recognize` → 用户核对 → 上传原图到 Storage
-→ 写 `receipts`。后端全程不碰数据库。
+**Extraction results always get a human look before they're written.** A model that
+misreads a total quietly corrupts the ledger, whereas glancing at it costs almost
+nothing. `/scan` goes: browser downscales the photo → `POST /api/recognize` → user
+confirms → original image uploaded to Storage → row written. The backend never touches
+the database.
 
-**给模型的 `response_format` 全是必填的非空字段**，用 `""` / `0` / `"unknown"` 表达
-「没识别出来」，而不是 `Optional` —— 这既是 OpenAI strict 模式的硬性要求（所有 property 都得在
-`required` 里），也避开了 nullable 带来的 `anyOf`。真正的 null 在 `api/app/schemas.py` 的 `normalize()` 里还原。
+**Every field in the model's `response_format` is required and non-nullable**, using
+`""` / `0` / `"unknown"` to mean "couldn't read it" rather than `Optional`. That is both
+what OpenAI's strict mode demands (every property must appear in `required`) and a way
+to avoid the `anyOf` that nullable fields produce. Real nulls are restored by
+`normalize()` in `api/app/schemas.py`.
 
-> 注意 `ExtractedReceipt` 的 docstring 和每个 `Field(description=...)` 都会被 SDK 塞进
-> 发给模型的 `response_format` 里 —— **它们是 prompt，不是注释**。实现层面的说明写成 `#` 注释。
+> Note that the `ExtractedReceipt` docstring and every `Field(description=...)` get
+> folded into the `response_format` sent to the model — **they are prompt, not
+> comments**. Keep implementation notes in `#` comments.
 
-**RLS 已开启，但 MVP 阶段用的是允许 anon 全量读写的临时策略。**
-接 Supabase Auth 时替换成按 `user_id` 隔离的策略 —— `supabase/schema.sql` 第 4 节
-有写好的替换语句，表结构不用动。
+**RLS is enabled, but the MVP policy lets any anon key holder read and write
+everything.** When wiring up Supabase Auth, swap in the per-`user_id` policies —
+section 4 of `supabase/schema.sql` already has them written out. No table changes
+required.
