@@ -1,4 +1,52 @@
-# 记账 App
+# Asian-Party
+
+这个仓库有两样东西：
+
+- **小票图片数据集** —— `receipt-image-dataset-1` ~ `-4`，188 张真实小票照片
+- **记账 App** —— `web/` + `api/` + `supabase/`，拍小票 → GPT-4o 识别 → 确认后入账
+
+数据集是仓库原本的内容，App 是后来加的。App 的识别准确率就是拿这个数据集验的。
+
+---
+
+# 一、小票数据集
+
+188 张 JPEG，分在四个目录里，按 `<编号>-receipt.jpg` 命名：
+
+| 目录 | 张数 | 编号区间 |
+| --- | --- | --- |
+| `receipt-image-dataset-1` | 34 | 1000–1032 |
+| `receipt-image-dataset-2` | 51 | 1033–1093 |
+| `receipt-image-dataset-3` | 53 | 1094–1145 |
+| `receipt-image-dataset-4` | 54 | 1146–1199 |
+
+编号跨目录连续，全局 1000–1199，其中 12 个号被删掉了（见 git 历史里那批 `Delete
+xxxx-receipt.jpg` 提交），所以是 188 张而不是 200 张。没有重号。
+
+每个目录下还有一个 1 字节的 `temp` 占位文件 —— 空目录进不了 git，删掉图片后靠它撑住目录。
+
+图片是真实世界的小票照片和扫描件，尺寸和方向都不统一（抽样见到 338×450 到 1000×903
+不等），有拍歪的、有反光的、有折痕的。这正是拿它测识别的价值所在。
+
+> 数据来源和授权条款仓库里没有记录。要商用或再分发的话，先跟仓库所有者确认。
+
+## 拿它测识别
+
+后端起好之后，直接把图片打给识别接口：
+
+```bash
+curl -s -X POST http://localhost:8000/api/recognize \
+  -F "file=@receipt-image-dataset-1/1012-receipt.jpg" | python3 -m json.tool
+```
+
+目前的 prompt 是拿其中 5 张（1012 / 1040 / 1093 / 1112 / 1178）调出来的，核心字段
+（日期、总额、币种、分类、支付方式、明细条数）对人工核对的答案全中。**只有 5 张，且
+恰好都是美国餐饮小票**（USD + food），英国超市、加油站、外币这些场景没被真正考验过 ——
+想扩样本，剩下 183 张都在这儿。
+
+---
+
+# 二、记账 App
 
 拍小票 → GPT-4o 识别 → 确认后入账。也支持手动记一笔。
 
@@ -67,8 +115,9 @@ cd ../api && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 ## 设计约定
 
-**分类以英文 slug 入库**（`food` / `transport` / ...），中文名、图标、颜色只存在于
-`web/src/constants/categories.ts`。改文案不影响历史数据。
+**分类以 slug 入库**（`food` / `transport` / ...），显示名、图标、颜色只存在于
+`web/src/constants/categories.ts`。UI 从中文改成英文时，历史数据一行没动 —— 这条约定
+就是为这种情况准备的。
 
 **`image_path` 存的是 Storage 对象路径，不是 URL。** bucket 是私有的，签名 URL 会过期，
 所以展示时才用 `createSignedUrl()` 现算。
