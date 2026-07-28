@@ -11,30 +11,52 @@
 :root {
   color-scheme: light dark;
 
-  --bg: #f2f2f7;
+  --bg: #f4f6f8;
   --surface: #ffffff;
-  --surface-2: #f7f7fa;
-  --line: #e5e5ea;
-  --fg: #111114;
-  --muted: #8a8a8f;
-  --accent: #4f46e5;
+  --surface-2: #eef1f5;
+  --line: #e7ebf0;
+  --fg: #1b2a4a;
+  --muted: #6b7689;
+
+  /* 顶部深色条。它不随明暗模式翻转 —— 那是品牌色，翻过来就不是这个设计了。 */
+  --brand: #1e2d4f;
+  --brand-fg: #ffffff;
+  /* 深色条上的次级文字 */
+  --brand-muted: #9daac4;
+
+  /* 承载文字/图标的绿。够深，白字压其上和它自己压白底都过 AA（都是 5.35）。 */
+  --accent: #0c7a52;
   --accent-fg: #ffffff;
-  --danger: #e5484d;
-  --success: #30a46c;
+  --accent-soft: #e9f8f1;
+  /* 参考图那支亮薄荷。只用于纯装饰填充 —— 图表色块、导航指示条 ——
+     上面不放任何文字，所以不受对比度约束。 */
+  --accent-vivid: #2ebd86;
+
+  --danger: #c8433f;
+  --success: #0c7a52;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #000000;
-    --surface: #1c1c1e;
-    --surface-2: #2c2c2e;
-    --line: #38383a;
-    --fg: #f5f5f7;
-    --muted: #98989d;
-    --accent: #7c76f2;
-    --accent-fg: #ffffff;
-    --danger: #ff6369;
-    --success: #3dd68c;
+    --bg: #0d1422;
+    --surface: #17203a;
+    --surface-2: #202b48;
+    --line: #2a3654;
+    --fg: #eef2f8;
+    --muted: #8d9ab5;
+
+    /* 暗色下头部条要比 surface 更沉，才还能读出「条」这个层次 */
+    --brand: #141d33;
+    --brand-fg: #ffffff;
+    --brand-muted: #8d9ab5;
+
+    --accent: #34cf95;
+    --accent-fg: #06251a;
+    --accent-soft: #17372c;
+    --accent-vivid: #34cf95;
+
+    --danger: #ff7b76;
+    --success: #34cf95;
   }
 }
 
@@ -45,8 +67,13 @@
   --color-line: var(--line);
   --color-fg: var(--fg);
   --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-muted: var(--brand-muted);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-vivid: var(--accent-vivid);
   --color-danger: var(--danger);
   --color-success: var(--success);
 
@@ -84,4 +111,21 @@ body {
 }
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* 参考设计里的卡片是「浮」在浅灰底上的，靠阴影而不是描边分层。
+   暗色模式下阴影看不见，改用一道极淡的描边顶替。 */
+.card {
+  background: var(--surface);
+  border-radius: 20px;
+  box-shadow:
+    0 1px 2px rgb(27 42 74 / 4%),
+    0 8px 24px -12px rgb(27 42 74 / 12%);
+}
+
+@media (prefers-color-scheme: dark) {
+  .card {
+    box-shadow: none;
+    border: 1px solid var(--line);
+  }
 }

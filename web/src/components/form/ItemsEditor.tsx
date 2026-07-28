@@ -18,7 +18,7 @@ export function ItemsEditor({ items, onChange }: Props) {
     onChange(items.map((it, i) => (i === index ? { ...it, [field]: value } : it)))
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-surface">
+    <div className="card overflow-hidden">
       {items.map((item, i) => (
         // 明细行没有 id，删中间一行时用 index 做 key 会让后面的行错位地复用
         // DOM 节点（输入焦点会跳）。这里行数少、改动不频繁，接受这个代价。

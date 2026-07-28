@@ -1,6 +1,7 @@
 import { ReceiptText } from 'lucide-react'
 import { useEffect } from 'react'
 
+import { PageBody, PageHeader } from '../components/layout/PageHeader'
 import { ReceiptRow } from '../components/ReceiptRow'
 import { formatAmount, formatDateGroup } from '../lib/format'
 import { useReceiptStore } from '../store/receipts'
@@ -40,32 +41,28 @@ export function ListPage() {
   }, [load])
 
   return (
-    <div className="px-4 pt-safe">
-      <header className="px-1 pt-6 pb-5">
-        <h1 className="text-[28px] font-bold tracking-tight text-fg">History</h1>
-      </header>
+    <>
+      <PageHeader title="History" />
 
-      {status === 'loading' && (
-        <p className="rounded-2xl bg-surface px-6 py-16 text-center text-[15px] text-muted">
-          Loading…
-        </p>
-      )}
+      <PageBody>
+        {status === 'loading' && (
+          <p className="card px-6 py-16 text-center text-[15px] text-muted">Loading…</p>
+        )}
 
-      {status === 'error' && (
-        <p className="rounded-2xl bg-surface px-6 py-10 text-center text-[14px] leading-relaxed text-danger">
-          {error}
-        </p>
-      )}
+        {status === 'error' && (
+          <p className="card px-6 py-10 text-center text-[14px] leading-relaxed text-danger">
+            {error}
+          </p>
+        )}
 
-      {status === 'ready' && receipts.length === 0 && (
-        <div className="flex flex-col items-center gap-3 rounded-2xl bg-surface px-6 py-16 text-center">
-          <ReceiptText size={36} className="text-muted" strokeWidth={1.5} />
-          <p className="text-[15px] text-muted">No expenses yet</p>
-          <p className="text-[13px] text-muted">Tap + to add your first one</p>
-        </div>
-      )}
+        {status === 'ready' && receipts.length === 0 && (
+          <div className="card flex flex-col items-center gap-3 px-6 py-16 text-center">
+            <ReceiptText size={36} className="text-muted" strokeWidth={1.5} />
+            <p className="text-[15px] text-muted">No expenses yet</p>
+            <p className="text-[13px] text-muted">Tap + to add your first one</p>
+          </div>
+        )}
 
-      <div className="flex flex-col gap-5">
         {groupByDate(receipts).map((group) => {
           const total = dayTotal(group.items)
           return (
@@ -76,7 +73,7 @@ export function ListPage() {
                 </h2>
                 {total && <span className="tabular text-[13px] text-muted">{total}</span>}
               </div>
-              <div className="overflow-hidden rounded-2xl bg-surface">
+              <div className="card overflow-hidden">
                 {group.items.map((r) => (
                   <ReceiptRow key={r.id} receipt={r} />
                 ))}
@@ -84,7 +81,7 @@ export function ListPage() {
             </section>
           )
         })}
-      </div>
-    </div>
+      </PageBody>
+    </>
   )
 }

@@ -1,7 +1,7 @@
 /** 本位币。所有金额默认按它显示；识别出的外币记录会带自己的 currency。 */
-export const BASE_CURRENCY = 'GBP'
+export const BASE_CURRENCY = 'USD'
 
-const LOCALE = 'en-GB'
+const LOCALE = 'en-US'
 
 export function formatAmount(amount: number, currency: string = BASE_CURRENCY): string {
   return new Intl.NumberFormat(LOCALE, {
@@ -43,6 +43,29 @@ export function formatDate(iso: string): string {
 /** 首页标题用：July */
 export function currentMonthName(): string {
   return new Intl.DateTimeFormat(LOCALE, { month: 'long' }).format(new Date())
+}
+
+/** '2026-07' → July 2026 */
+export function formatMonth(month: string): string {
+  const [y, m] = month.split('-').map(Number)
+  return new Intl.DateTimeFormat(LOCALE, { month: 'long', year: 'numeric' }).format(
+    new Date(y, m - 1, 1),
+  )
+}
+
+/** '2026-07' → Jul，趋势图的横轴用 */
+export function formatMonthShort(month: string): string {
+  const [y, m] = month.split('-').map(Number)
+  return new Intl.DateTimeFormat(LOCALE, { month: 'short' }).format(new Date(y, m - 1, 1))
+}
+
+/** 0.1234 → 12%。环比和占比都用它。 */
+export function formatPercent(ratio: number, digits = 0): string {
+  return new Intl.NumberFormat(LOCALE, {
+    style: 'percent',
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(ratio)
 }
 
 /** 列表分组标题用：今天 / 昨天 / 7月28日 */

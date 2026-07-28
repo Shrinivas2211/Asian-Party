@@ -34,7 +34,7 @@ export function ReceiptForm({ draft, onChange, imagePath, imageFile }: Props) {
 
       <CategoryGrid value={draft.category} onChange={(category) => onChange({ category })} />
 
-      <div className="overflow-hidden rounded-2xl bg-surface">
+      <div className="card overflow-hidden">
         <FormRow label="Date">
           <RowInput
             type="date"

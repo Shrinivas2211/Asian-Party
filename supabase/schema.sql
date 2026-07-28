@@ -20,8 +20,9 @@ create table if not exists public.receipts (
   date           date        not null default current_date,
   total_amount   numeric(12,2) not null check (total_amount > 0),
 
-  -- 本位币 GBP。Gemini 从外币小票识别出的原始币种也存这里，但不做汇率折算。
-  currency       text        not null default 'GBP',
+  -- 本位币 USD。模型从外币小票识别出的原始币种也存这里，但不做汇率折算 ——
+  -- 汇总时只累加本位币，其余币种单独列出。
+  currency       text        not null default 'USD',
 
   category       text        not null,
   payment_method text,

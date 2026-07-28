@@ -44,7 +44,7 @@ export function ReceiptImage({ path, file }: Props) {
 
   if (failed) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-2xl bg-surface px-6 py-10 text-center">
+      <div className="card flex flex-col items-center gap-2 px-6 py-10 text-center">
         <ImageOff size={28} className="text-muted" strokeWidth={1.5} />
         {/* HEIC 在非 Safari 浏览器里解不开，这时候图是好的、只是显示不出来 */}
         <p className="text-[13px] text-muted">Can't show this photo here — try Safari or your phone</p>
@@ -53,7 +53,7 @@ export function ReceiptImage({ path, file }: Props) {
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-surface">
+    <div className="card overflow-hidden">
       {url && (
         <img
           src={url}

@@ -35,11 +35,14 @@ export function ScanPage() {
   const [stage, setStage] = useState<Stage>('idle')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  /** 图片没传上去。此时不该逼用户重来，给个「不要图直接存」的出口。 */
+  const [uploadFailed, setUploadFailed] = useState(false)
 
   function reset() {
     setFile(null)
     setDraft(null)
     setError(null)
+    setUploadFailed(false)
     setStage('idle')
     // 选同一个文件不会再触发 change，得先把 input 清空，否则「重拍」拍回
     // 同一张图会毫无反应
@@ -65,8 +68,8 @@ export function ScanPage() {
     }
   }
 
-  async function onSave() {
-    if (!draft || !file || saving) return
+  async function onSave({ skipPhoto = false } = {}) {
+    if (!draft || saving) return
 
     const problem = draftError(draft)
     if (problem) {
@@ -79,7 +82,20 @@ export function ScanPage() {
     try {
       // 先传图拿到路径，再连着记录一起写库。反过来的话中途失败会留下
       // 一条 image_path 指不到东西的记录。
-      const imagePath = await uploadReceiptImage(file)
+      let imagePath: string | null = null
+      if (file && !skipPhoto) {
+        try {
+          imagePath = await uploadReceiptImage(file)
+        } catch (e) {
+          // 图没传上去，但这一笔账本身是好的 —— 别让用户核对半天最后一场空。
+          // 把选择权交回去：重试，或者不要图直接存。
+          setError((e as Error).message)
+          setUploadFailed(true)
+          setSaving(false)
+          return
+        }
+      }
+
       await save(draft, { imagePath, isManual: false })
       navigate('/list', { replace: true })
     } catch (e) {
@@ -103,7 +119,7 @@ export function ScanPage() {
         </h1>
         {stage === 'confirming' && (
           <button
-            onClick={onSave}
+            onClick={() => onSave()}
             disabled={saving}
             className="rounded-full px-4 py-1.5 text-[17px] font-semibold text-accent active:opacity-60 disabled:opacity-40"
           >
@@ -217,6 +233,16 @@ export function ScanPage() {
               <p className="px-1 text-[13px] text-danger" role="alert">
                 {error}
               </p>
+            )}
+
+            {uploadFailed && (
+              <button
+                onClick={() => onSave({ skipPhoto: true })}
+                disabled={saving}
+                className="rounded-2xl bg-accent py-4 text-[17px] font-semibold text-accent-fg active:opacity-80 disabled:opacity-40"
+              >
+                Save without the photo
+              </button>
             )}
 
             <button

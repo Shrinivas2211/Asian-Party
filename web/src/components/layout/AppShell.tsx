@@ -11,7 +11,8 @@ export function AppShell() {
   return (
     <div className="min-h-dvh bg-bg">
       {/* 底部留出 nav 高度 + FAB 的空间，最后一条记录不会被挡住 */}
-      <main className="mx-auto max-w-md pb-28">
+      {/* 头部深色条要通栏，所以 max-w 下放给各页面自己控制 */}
+      <main className="pb-28">
         <Outlet />
       </main>
       <Fab />

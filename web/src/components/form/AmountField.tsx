@@ -19,7 +19,7 @@ interface Props {
 /** 记账页最上面那个大号金额输入。自动聚焦 —— 打开表单第一件事永远是填金额。 */
 export function AmountField({ value, currency, onChange }: Props) {
   return (
-    <label className="flex items-baseline justify-center gap-1.5 rounded-2xl bg-surface px-5 py-8">
+    <label className="card flex items-baseline justify-center gap-1.5 px-5 py-8">
       <span className="tabular text-[26px] font-medium text-muted">{currencySymbol(currency)}</span>
       <input
         // 手机上拉数字键盘；type="number" 会带上没用的加减箭头，还挡不住 "1e5"

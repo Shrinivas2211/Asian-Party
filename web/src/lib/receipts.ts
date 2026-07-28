@@ -208,24 +208,58 @@ function randomFileId(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+/** 和 bucket 的 file_size_limit 对齐（见 supabase/schema.sql 第 5 节）。 */
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+
+/**
+ * supabase-js 把 fetch 的网络层失败原样透出来 —— Safari 说 "Load failed"，
+ * Chrome 说 "Failed to fetch"。这两句话对用户没有任何指导意义，换成能照做的，
+ * 原文留在括号里方便排查。
+ */
+function uploadErrorMessage(message: string): string {
+  return /load failed|failed to fetch|networkerror|network request failed/i.test(message)
+    ? `Photo upload failed — check your connection and try again (${message})`
+    : `Photo upload failed: ${message}`
+}
+
+async function tryUpload(path: string, file: File, upsert: boolean): Promise<string | null> {
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+    // file.type 为空时（某些相册来源）给个默认值，否则会被 bucket 的
+    // allowed_mime_types 拒掉
+    contentType: file.type || 'image/jpeg',
+    upsert,
+  })
+  return error?.message ?? null
+}
+
 /**
  * 上传小票原图，返回 **对象路径**（不是 URL —— 私有 bucket 的签名 URL 会过期，
  * 存进库里没多久就失效了）。按年月分目录，纯粹是为了以后翻文件方便。
  */
 export async function uploadReceiptImage(file: File): Promise<string> {
+  // 超限的请求发出去多半是被中途掐断，报错会变成语焉不详的 "Load failed"。
+  // 在本地就拦住，用户至少知道该怎么办。
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error(
+      `This photo is ${(file.size / 1024 / 1024).toFixed(1)} MB and the limit is 10 MB — try a smaller one.`,
+    )
+  }
+
   const now = new Date()
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const extension = EXTENSION_BY_TYPE[file.type] ?? 'jpg'
   const path = `${now.getFullYear()}/${month}/${randomFileId()}.${extension}`
 
-  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-    // file.type 为空时（某些相册来源）给个默认值，否则会被 bucket 的
-    // allowed_mime_types 拒掉
-    contentType: file.type || 'image/jpeg',
-  })
-  if (error) throw new Error(`Photo upload failed: ${error.message}`)
+  const firstError = await tryUpload(path, file, false)
+  if (!firstError) return path
 
-  return path
+  // 网络抖一下重来一次就好。必须 upsert —— 第一次有可能其实传成功了、只是
+  // 响应没回来，那这个路径已经被占，不 upsert 会撞 409 Duplicate。
+  await new Promise((resolve) => setTimeout(resolve, 800))
+  const retryError = await tryUpload(path, file, true)
+  if (!retryError) return path
+
+  throw new Error(uploadErrorMessage(retryError))
 }
 
 /** 私有 bucket，展示时现算一个临时 URL。 */
@@ -233,33 +267,4 @@ export async function signedImageUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_TTL)
   if (error) throw new Error(error.message)
   return data.signedUrl
-}
-
-// ---------------------------------------------------------------------------
-// 汇总
-// ---------------------------------------------------------------------------
-
-export interface MonthSummary {
-  total: number
-  count: number
-  /** 本月出现过的外币。不做汇率折算，所以它们没有计入 total，只在界面上提示一句。 */
-  foreignCurrencies: string[]
-}
-
-/** month 形如 '2026-07'，默认本月。 */
-export function summarizeMonth(
-  receipts: ReceiptWithItems[],
-  month: string = todayISO().slice(0, 7),
-): MonthSummary {
-  const inMonth = receipts.filter((r) => r.date.startsWith(month))
-
-  return {
-    total: inMonth
-      .filter((r) => r.currency === BASE_CURRENCY)
-      .reduce((sum, r) => sum + r.total_amount, 0),
-    count: inMonth.length,
-    foreignCurrencies: [
-      ...new Set(inMonth.filter((r) => r.currency !== BASE_CURRENCY).map((r) => r.currency)),
-    ],
-  }
 }

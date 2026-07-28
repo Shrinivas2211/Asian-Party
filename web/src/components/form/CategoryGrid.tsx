@@ -9,8 +9,8 @@ interface Props {
 /** 分类选择。七个而已，全铺开比藏进下拉菜单少一次点击。 */
 export function CategoryGrid({ value, onChange }: Props) {
   return (
-    <div className="grid grid-cols-4 gap-y-4 rounded-2xl bg-surface px-3 py-5">
-      {CATEGORIES.map(({ slug, label, icon: Icon, color }) => {
+    <div className="card grid grid-cols-4 gap-y-4 px-3 py-5">
+      {CATEGORIES.map(({ slug, label, icon: Icon, color, ink, glyph }) => {
         const selected = value === slug
         return (
           <button
@@ -20,15 +20,22 @@ export function CategoryGrid({ value, onChange }: Props) {
             className="flex flex-col items-center gap-1.5"
           >
             <span
-              className={`flex size-12 items-center justify-center rounded-full text-white transition-transform active:scale-90 ${
-                selected ? 'ring-2 ring-fg/70 ring-offset-2 ring-offset-surface' : ''
+              className={`flex size-12 items-center justify-center rounded-full transition-transform active:scale-90 ${
+                selected ? 'ring-2 ring-fg/60 ring-offset-2 ring-offset-surface' : ''
               }`}
-              // 颜色来自数据，只能走 inline style
-              style={{ backgroundColor: color, opacity: selected || !value ? 1 : 0.45 }}
+              // 未选中不再整体压透明度（那让浅色分类糊成一团），改成「浅底 + 深墨图标」；
+              // 选中才是实色圆。两种状态的图标色都算过对比，最低 4.6。
+              style={
+                selected
+                  ? { backgroundColor: color, color: glyph }
+                  : { backgroundColor: `color-mix(in srgb, ${color} 16%, transparent)`, color: ink }
+              }
             >
               <Icon size={22} />
             </span>
-            <span className={`text-[12px] ${selected ? 'text-fg' : 'text-muted'}`}>{label}</span>
+            <span className={`text-[12px] ${selected ? 'font-medium text-fg' : 'text-muted'}`}>
+              {label}
+            </span>
           </button>
         )
       })}

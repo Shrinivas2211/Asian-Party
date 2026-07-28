@@ -58,7 +58,7 @@ export function ConnectionStatus() {
   }, [])
 
   return (
-    <div className="rounded-2xl bg-surface p-1">
+    <div className="card p-1">
       {checks.map((c, i) => (
         <div
           key={c.label}
